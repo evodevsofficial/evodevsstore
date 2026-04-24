@@ -994,6 +994,21 @@
   .systems-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
+.hero-cue--mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* .hero-cue { display: none; } */
+  .hero-cue {
+    display: flex;
+    bottom: 4rem;
+  }
+  .hero-cue--mobile {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   /* Hero: text centered on mobile, mesh toned down */
 
@@ -1025,7 +1040,7 @@
 
   .hero-btns { flex-direction: column; }
   .hero-btns .btn { width: 100%; }
-  .hero-cue { display: none; }
+  .hero-cue { display: flex; bottom: 4rem; }
 
   /* Stats */
   .stats-row { grid-template-columns: repeat(2, 1fr); }

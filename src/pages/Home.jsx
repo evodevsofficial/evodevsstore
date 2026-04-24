@@ -1,5 +1,6 @@
-import React, { useRef, useState, useEffect, Suspense } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import Spline from '@splinetool/react-spline';
 import {
   ArrowRight, ArrowDown, TrendingUp, Zap, Settings,
   CheckCircle, Star, Users, BarChart3, Globe,
@@ -36,8 +37,6 @@ const testimonials = [
   { text: "Our trial bookings doubled in the first month. Best investment we've made.", author: "Mike Thompson", role: "Fitness First", rating: 5 },
   { text: "No-shows dropped 90%. Clients love booking themselves.", author: "Lisa Rodriguez", role: "Glow Salon", rating: 5 }
 ];
-
-const Spline = React.lazy(() => import('@splinetool/react-spline'));
 
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -96,9 +95,7 @@ const Home = () => {
         <div className="hero-sticky">
         
           <div className="hero-spline-layer">
-            <Suspense fallback={null}>
               <Spline scene="https://prod.spline.design/WDsa2aJ-HgvwK7Mi/scene.splinecode" />
-            </Suspense>
           </div>
 
           <div className="hero-mesh-bg">

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@splinetool/react-spline": "^4.1.0",
+    "@splinetool/viewer": "^1.12.88",
     "@stripe/stripe-js": "^2.4.0",
     "@vercel/blob": "^2.3.3",
     "firebase": "^12.12.0",

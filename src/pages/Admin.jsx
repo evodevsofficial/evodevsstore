@@ -82,6 +82,43 @@ const Admin = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('adminAuth') === 'true';
+  });
+  const [passwordInput, setPasswordInput] = useState('');
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (passwordInput === 'admin@123') {
+      localStorage.setItem('adminAuth', 'true');
+      setIsAuthenticated(true);
+    } else {
+      setError('Invalid password');
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="admin-layout">
+        <div className="admin-main">
+          <div className="admin-page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+            <h1 style={{ marginBottom: '2rem' }}>Admin Login</h1>
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '300px' }}>
+              <input
+                type="password"
+                placeholder="Enter password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                style={{ padding: '1rem', fontSize: '1rem', borderRadius: '8px', border: '1px solid #ccc' }}
+              />
+              {error && <p style={{ color: 'red' }}>{error}</p>}
+              <button type="submit" className="btn btn-primary" style={{ padding: '1rem' }}>Login</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   React.useEffect(() => {
     const initFirebase = async () => {
