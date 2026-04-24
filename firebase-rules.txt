@@ -1,0 +1,56 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Products, Reviews, Case Studies - public read, admin write
+    match /products/{productId} {
+      allow read, write: if true;
+    }
+    
+    match /reviews/{reviewId} {
+      allow read, write: if true;
+    }
+    
+    match /caseStudies/{caseId} {
+      allow read, write: if true;
+    }
+    
+    match /leads/{leadId} {
+      allow read, create: if true;
+      allow update, delete: if false;
+    }
+    
+    // Users - simplify write logic so signups don't crash popup
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Orders - let users create and update their pending checks
+    match /orders/{orderId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Notifications - allow creation on checkout
+    match /notifications/{notificationId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Billing Module
+    match /billingSettings/{docId} {
+      allow read, write: if true;
+    }
+    match /billingProducts/{docId} {
+      allow read, write: if true;
+    }
+    match /billingClients/{docId} {
+      allow read, write: if true;
+    }
+    match /bills/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

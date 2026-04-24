@@ -1,0 +1,86 @@
+.faq-section {
+  padding: 5rem 0;
+  background: #0f0f0f;
+}
+
+.faq-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.faq-header h2 {
+  font-size: 2rem;
+  color: #fff;
+}
+
+.faq-grid {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.faq-item {
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.faq-item:hover {
+  background: #222;
+}
+
+.faq-question {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  color: #fff;
+  font-weight: 500;
+}
+
+.faq-item svg {
+  color: #666;
+  transition: transform 0.2s;
+}
+
+.faq-item.open svg {
+  transform: rotate(180deg);
+}
+
+.faq-answer {
+  overflow: hidden;
+}
+
+.faq-answer p {
+  padding: 0 1.25rem 1.25rem;
+  color: #888;
+  line-height: 1.6;
+}
+
+.trust-badges {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  margin-top: 4rem;
+  flex-wrap: wrap;
+}
+
+.trust-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: #666;
+}
+
+.trust-badge svg {
+  color: #10b981;
+}
+
+.trust-badge span {
+  font-size: 0.85rem;
+}
