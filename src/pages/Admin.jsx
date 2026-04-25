@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, Package, Pencil, Trash2, Upload, X, Image as ImageIcon, ArrowLeft, Save, Plus, ShoppingCart, CheckCircle, Users, XCircle, Gift, Receipt } from 'lucide-react';
+import { LayoutDashboard, Package, Pencil, Trash2, Upload, X, Image as ImageIcon, ArrowLeft, Save, Plus, ShoppingCart, CheckCircle, Users, XCircle, Gift, Receipt, MessageSquare, Wrench } from 'lucide-react';
 import './Admin.css';
 import { formatPrice } from '../currency';
 import Billing from './Billing';
@@ -176,6 +176,8 @@ const Admin = () => {
           <button className={`nav-item ${currentPage === 'orders' ? 'active' : ''}`} onClick={() => setCurrentPage('orders')}><ShoppingCart size={18} />Orders</button>
           <button className={`nav-item ${currentPage === 'users' ? 'active' : ''}`} onClick={() => setCurrentPage('users')}><Users size={18} />Users</button>
           <button className={`nav-item ${currentPage === 'billing' ? 'active' : ''}`} onClick={() => setCurrentPage('billing')}><Receipt size={18} />Billing System</button>
+          <button className={`nav-item ${currentPage === 'contacts' ? 'active' : ''}`} onClick={() => setCurrentPage('contacts')}><MessageSquare size={18} />Contacts</button>
+          <button className={`nav-item ${currentPage === 'customRequests' ? 'active' : ''}`} onClick={() => setCurrentPage('customRequests')}><Wrench size={18} />Custom Requests</button>
         </nav>
         <div className="nav-bottom"><Link to="/" className="nav-item"><ArrowLeft size={18} />Back to Site</Link></div>
       </aside>
@@ -185,6 +187,8 @@ const Admin = () => {
         {currentPage === 'orders' && <OrderManager />}
         {currentPage === 'users' && <UserManager />}
         {currentPage === 'billing' && <Billing db={db} collection={collection} addDoc={addDoc} updateDoc={updateDoc} deleteDoc={deleteDoc} doc={doc} onSnapshot={onSnapshot} serverTimestamp={serverTimestamp} query={query} orderBy={orderBy} getDocs={getDocs} />}
+        {currentPage === 'contacts' && <ContactManager db={db} collection={collection} deleteDoc={deleteDoc} doc={doc} onSnapshot={onSnapshot} query={query} orderBy={orderBy} />}
+        {currentPage === 'customRequests' && <CustomRequestsManager db={db} collection={collection} deleteDoc={deleteDoc} doc={doc} onSnapshot={onSnapshot} query={query} orderBy={orderBy} />}
       </main>
     </div>
   );
@@ -698,6 +702,21 @@ const UserManager = () => {
     }
   };
 
+  const handleDeleteUser = async (userId, userEmail) => {
+    if (!window.confirm(`Permanently delete user "${userEmail}" and ALL their orders? This cannot be undone.`)) return;
+    try {
+      const userOrders = orders.filter(o => o.userId === userId);
+      for (const order of userOrders) {
+        await deleteDoc(doc(db, 'orders', order.id));
+      }
+      await deleteDoc(doc(db, 'users', userId));
+      alert('User and all their orders deleted.');
+    } catch(e) {
+      console.error(e);
+      alert('Failed to delete user.');
+    }
+  };
+
   return (
     <div className="admin-page">
       <div className="admin-header">
@@ -717,7 +736,8 @@ const UserManager = () => {
                   <h3 style={{fontSize: '1.2rem'}}>{u.name || 'Unnamed User'}</h3>
                   <p style={{fontSize: '0.85rem', color: '#64748b'}}>{u.email}</p>
                 </div>
-                {giftUserId === u.id ? (
+                <div style={{display: 'flex', gap: '0.5rem'}}>
+                  {giftUserId === u.id ? (
                   <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end'}}>
                     <div style={{display: 'flex', gap: '0.5rem'}}>
                       <select value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)} style={{padding: '0.4rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem'}}>
@@ -738,13 +758,22 @@ const UserManager = () => {
                     />
                   </div>
                 ) : (
-                  <button 
-                    onClick={() => { setGiftUserId(u.id); setSelectedProductId(''); setGiftMessage(''); }}
-                    style={{background: '#f1f5f9', color: '#8b5cf6', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '0.5rem', alignItems: 'center', fontWeight: '500', fontSize: '0.85rem'}}
-                  >
-                    <Gift size={16} /> Gift Product
-                  </button>
+                  <div style={{display: 'flex', gap: '0.5rem'}}>
+                    <button 
+                      onClick={() => { setGiftUserId(u.id); setSelectedProductId(''); setGiftMessage(''); }}
+                      style={{background: '#f1f5f9', color: '#8b5cf6', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '0.5rem', alignItems: 'center', fontWeight: '500', fontSize: '0.85rem'}}
+                    >
+                      <Gift size={16} /> Gift Product
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteUser(u.id, u.email)}
+                      style={{background: '#fef2f2', color: '#ef4444', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '0.5rem', alignItems: 'center', fontWeight: '500', fontSize: '0.85rem'}}
+                    >
+                      <Trash2 size={16} /> Delete User
+                    </button>
+                  </div>
                 )}
+                </div>
               </div>
 
               <div style={{marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9'}}>
@@ -773,6 +802,107 @@ const UserManager = () => {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+};
+
+const ContactManager = ({ db, collection: col, deleteDoc, doc, onSnapshot, query: q, orderBy: o }) => {
+  const [contacts, setContacts] = useState([]);
+
+  useEffect(() => {
+    if (!db || !col || !q || !o) return;
+    const queryRef = q(col(db, 'contacts'), o('createdAt', 'desc'));
+    const unsub = onSnapshot(queryRef, (snap) => {
+      setContacts(snap.docs.map(d => ({id: d.id, ...d.data()})));
+    });
+    return unsub;
+  }, [db, col, q, o]);
+
+  const handleDelete = async (contactId) => {
+    if (!window.confirm('Delete this contact submission?')) return;
+    try {
+      await deleteDoc(doc(db, 'contacts', contactId));
+    } catch(e) { console.error(e); }
+  };
+
+  return (
+    <div className="admin-page">
+      <div className="page-header"><h1 className="page-title">Contact Submissions</h1></div>
+      {contacts.length > 0 && (
+        <p style={{color: '#64748b', marginBottom: '2rem'}}>{contacts.length} total message{contacts.length !== 1 ? 's' : ''}</p>
+      )}
+      <div className="items-list" style={{maxWidth: '800px'}}>
+        {contacts.length === 0 && <p className="empty">No contact submissions yet.</p>}
+        {contacts.map(c => (
+          <div key={c.id} className="list-item" style={{borderLeft: '4px solid #3b82f6', paddingLeft: '1.25rem', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
+            <div className="list-item-header" style={{width: '100%', justifyContent: 'space-between'}}>
+              <div>
+                <strong style={{fontSize: '1rem'}}>{c.name}</strong>
+                <span style={{fontSize: '0.8rem', color: '#64748b', marginLeft: '0.75rem'}}>{c.email}</span>
+              </div>
+              <button onClick={() => handleDelete(c.id)} style={{background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem', fontWeight: 500}}>
+                <Trash2 size={14} /> Delete
+              </button>
+            </div>
+            <div className="item-category-badge" style={{display: 'inline-block', background: '#eff6ff', color: '#2563EB', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 600, width: 'fit-content'}}>{c.subject || 'No Subject'}</div>
+            <p style={{fontSize: '0.875rem', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.6}}>{c.message}</p>
+            <p style={{fontSize: '0.75rem', color: '#94a3b8'}}>
+              {c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString() : 'Just now'}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const CustomRequestsManager = ({ db, collection: col, deleteDoc, doc, onSnapshot, query: q, orderBy: o }) => {
+  const [requests, setRequests] = useState([]);
+
+  useEffect(() => {
+    if (!db || !col || !q || !o) return;
+    const queryRef = q(col(db, 'customRequests'), o('createdAt', 'desc'));
+    const unsub = onSnapshot(queryRef, (snap) => {
+      setRequests(snap.docs.map(d => ({id: d.id, ...d.data()})));
+    });
+    return unsub;
+  }, [db, col, q, o]);
+
+  const handleDelete = async (requestId) => {
+    if (!window.confirm('Delete this custom request?')) return;
+    try {
+      await deleteDoc(doc(db, 'customRequests', requestId));
+    } catch(e) { console.error(e); }
+  };
+
+  return (
+    <div className="admin-page">
+      <div className="page-header"><h1 className="page-title">Custom Solution Requests</h1></div>
+      {requests.length > 0 && (
+        <p style={{color: '#64748b', marginBottom: '2rem'}}>{requests.length} total request{requests.length !== 1 ? 's' : ''}</p>
+      )}
+      <div className="items-list" style={{maxWidth: '900px'}}>
+        {requests.length === 0 && <p className="empty">No custom requests yet.</p>}
+        {requests.map(r => (
+          <div key={r.id} className="list-item" style={{borderLeft: '4px solid #8b5cf6', paddingLeft: '1.25rem', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
+            <div className="list-item-header" style={{width: '100%', justifyContent: 'space-between'}}>
+              <div>
+                <strong style={{fontSize: '1.05rem'}}>{r.name}</strong>
+                <span style={{fontSize: '0.8rem', color: '#64748b', marginLeft: '1rem'}}>{r.email}</span>
+                {r.phone && <span style={{fontSize: '0.8rem', color: '#64748b', marginLeft: '0.5rem'}}>{r.phone}</span>}
+              </div>
+              <button onClick={() => handleDelete(r.id)} style={{background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem', fontWeight: 500}}>
+                <Trash2 size={14} /> Delete
+              </button>
+            </div>
+            <div className="item-category-badge" style={{display: 'inline-block', background: '#f3e8ff', color: '#7c3aed', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 600, width: 'fit-content'}}>CUSTOM BUILD REQUEST</div>
+            <p style={{fontSize: '0.9375rem', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.7, background: '#fafafa', padding: '1rem 1.25rem', borderRadius: '12px'}}>{r.idea}</p>
+            <p style={{fontSize: '0.75rem', color: '#94a3b8'}}>
+              {r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString() : 'Just now'}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );

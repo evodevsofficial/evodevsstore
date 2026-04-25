@@ -4,7 +4,8 @@ import Spline from '@splinetool/react-spline';
 import {
   ArrowRight, ArrowDown, TrendingUp, Zap, Settings,
   CheckCircle, Star, Users, BarChart3, Globe,
-  Mail, Phone, MapPin, Send, XCircle, CheckCircle2
+  Mail, Phone, MapPin, Send, XCircle, CheckCircle2,
+  Wrench, Sparkles, MessageSquare, Loader2, X
 } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import ProductCard from '../components/ProductCard';
@@ -38,10 +39,33 @@ const testimonials = [
   { text: "No-shows dropped 90%. Clients love booking themselves.", author: "Lisa Rodriguez", role: "Glow Salon", rating: 5 }
 ];
 
+const PHONE = '9111005300';
+const EMAIL = 'evodevs.official@gmail.com';
+const INSTA = 'evodevs';
+
+const saveCustomRequest = async (data) => {
+  try {
+    const { db } = await import('../firebase');
+    const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+    await addDoc(collection(db, 'customRequests'), {
+      ...data,
+      createdAt: serverTimestamp()
+    });
+  } catch (err) {
+    console.error('Failed to save custom request:', err);
+    throw err;
+  }
+};
+
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { captureLead } = useStore();
+  const [showCustomModal, setShowCustomModal] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customPhone, setCustomPhone] = useState('');
+  const [customSubmitted, setCustomSubmitted] = useState(false);
+  const [customLoading, setCustomLoading] = useState(false);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -298,7 +322,76 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="contact-section" id="contact">
+      <section className="custom-section">
+        <div className="container">
+          <motion.div className="sec-header" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
+            <h2 className="sec-title">Need something custom?</h2>
+            <p className="sec-sub">Don't see what you need? Tell us your idea — we'll build it for you.</p>
+          </motion.div>
+
+          <motion.div className="custom-card" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={scaleIn}>
+            <div className="custom-icon"><Wrench size={32} /></div>
+            <h3>Custom Solution</h3>
+            <p>Apps, websites, AI tools, automations — if you can imagine it, we can build it. Tell us what you need and we'll make it happen.</p>
+            <div className="custom-features">
+              <span><Sparkles size={16} /> Custom App</span>
+              <span><Wrench size={16} /> Tailored to You</span>
+              <span><TrendingUp size={16} /> Scalable System</span>
+            </div>
+            <button className="btn btn-primary" onClick={() => setShowCustomModal(true)}>
+              <MessageSquare size={18} /> Request Custom Solution
+            </button>
+          </motion.div>
+        </div>
+      </section>
+
+      {showCustomModal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowCustomModal(false); }}>
+          <div className="modal-box">
+            <button className="modal-close" onClick={() => setShowCustomModal(false)}><X size={20} /></button>
+            <div className="modal-icon"><Wrench size={28} /></div>
+            {customSubmitted ? (
+              <div className="modal-success">
+                <div className="custom-check"><CheckCircle2 size={32} /></div>
+                <h3>Request Sent!</h3>
+                <p>Thanks {customName}! We'll contact you within 24 hours.</p>
+                <button className="btn btn-primary" onClick={() => setShowCustomModal(false)}>Close</button>
+              </div>
+            ) : (
+              <>
+                <h3>Request Custom Solution</h3>
+                <p className="modal-desc">We will contact you within a few hours. Just share your name and phone.</p>
+                <form onSubmit={async e => {
+                  e.preventDefault();
+                  setCustomLoading(true);
+                  try {
+                    await saveCustomRequest({ name: customName, phone: customPhone });
+                    setCustomSubmitted(true);
+                  } catch (err) {
+                    alert('Failed to send. Please contact us directly.');
+                  } finally {
+                    setCustomLoading(false);
+                  }
+                }}>
+                  <div className="form-group">
+                    <label>Your Name *</label>
+                    <input type="text" value={customName} onChange={e => setCustomName(e.target.value)} required placeholder="John Doe" />
+                  </div>
+                  <div className="form-group">
+                    <label>Phone / WhatsApp *</label>
+                    <input type="tel" value={customPhone} onChange={e => setCustomPhone(e.target.value)} required placeholder="+91 9XXXXXXXXX" />
+                  </div>
+                  <button type="submit" className="btn btn-primary btn--full" disabled={customLoading}>
+                    {customLoading ? <><Loader2 size={16} className="spin" /> Sending...</> : <><MessageSquare size={16} /> Submit Request</>}
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      <section id="contact" className="contact-section">
         <div className="container">
           <motion.div className="sec-header" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
             <h2 className="sec-title">Let's build something that actually works.</h2>
@@ -309,25 +402,25 @@ const Home = () => {
             <motion.div className="contact-info" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
               <div className="contact-info-card">
                 <div className="contact-item">
-                  <div className="contact-item-icon"><Mail size={20} /></div>
-                  <div>
-                    <div className="contact-item-label">Email</div>
-                    <div className="contact-item-value">hello@evodevs.com</div>
-                  </div>
-                </div>
-                <div className="contact-item">
-                  <div className="contact-item-icon"><Phone size={20} /></div>
-                  <div>
-                    <div className="contact-item-label">Phone</div>
-                    <div className="contact-item-value">+91 98765 43210</div>
-                  </div>
-                </div>
-                <div className="contact-item">
-                  <div className="contact-item-icon"><MapPin size={20} /></div>
-                  <div>
-                    <div className="contact-item-label">Location</div>
-                    <div className="contact-item-value">Remote — Worldwide</div>
-                  </div>
+<div className="contact-item-icon"><Mail size={20} /></div>
+                   <div>
+                     <div className="contact-item-label">Email</div>
+                     <div className="contact-item-value">evodevs.official@gmail.com</div>
+                   </div>
+                 </div>
+                 <div className="contact-item">
+                   <div className="contact-item-icon"><Phone size={20} /></div>
+                   <div>
+                     <div className="contact-item-label">Phone</div>
+                     <div className="contact-item-value">+91 9111005300</div>
+                   </div>
+                 </div>
+                 <div className="contact-item">
+                   <div className="contact-item-icon"><MapPin size={20} /></div>
+                   <div>
+                     <div className="contact-item-label">Instagram</div>
+                     <div className="contact-item-value">@evodevs</div>
+                   </div>
                 </div>
               </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Receipt, Search, Plus, Trash2, Edit, X, Save, Download, FileText, ChevronDown, CheckCircle, ChevronRight, User } from 'lucide-react';
+import { Receipt, Search, Plus, Trash2, Edit, X, Save, Download, FileText, ChevronDown, CheckCircle, ChevronRight, User, AlertTriangle } from 'lucide-react';
 import './Billing.css';
 import { formatPrice } from '../currency';
 
@@ -106,7 +106,7 @@ const BillingDashboard = ({ fs }) => {
 
 // 2. Bills system (creation and list)
 const BillingBills = ({ fs }) => {
-  const { db, doc, collection, onSnapshot, query, orderBy } = fs;
+  const { db, doc, collection, onSnapshot, query, orderBy, deleteDoc } = fs;
   const [bills, setBills] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
   const [clients, setClients] = useState([]);
@@ -139,6 +139,17 @@ const BillingBills = ({ fs }) => {
     return `${prefix}${String(max + 1).padStart(4, '0')}`;
   };
 
+  const handleDeleteBill = async (billId, billNumber) => {
+    if (!window.confirm(`Permanently delete bill "${billNumber}"? This cannot be undone.`)) return;
+    try {
+      await deleteDoc(doc(db, 'bills', billId));
+      alert('Bill deleted.');
+    } catch(e) {
+      console.error(e);
+      alert('Failed to delete bill.');
+    }
+  };
+
   return (
     <div className="billing-page">
       {!isCreating ? (
@@ -157,8 +168,14 @@ const BillingBills = ({ fs }) => {
                     <h4>{b.billNumber}</h4>
                     <p>{client?.name || 'Unknown'} - {client?.phone || ''}</p>
                   </div>
-                  <div>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
                     <span className="bp-amount">{formatPrice(b.totalAmount)}</span>
+                    <button 
+                      onClick={() => handleDeleteBill(b.id, b.billNumber)}
+                      style={{background: '#fef2f2', color: '#ef4444', border: 'none', padding: '0.4rem 0.6rem', borderRadius: '6px', cursor: 'pointer', display: 'flex', gap: '0.3rem', alignItems: 'center', fontSize: '0.75rem', fontWeight: 500}}
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
                   </div>
                 </div>
               );
@@ -660,7 +677,7 @@ const BillingProducts = ({ fs }) => {
 
 // 4. Clients CRM
 const BillingClients = ({ fs }) => {
-  const { db, collection, onSnapshot } = fs;
+  const { db, collection, onSnapshot, deleteDoc, doc } = fs;
   const [clients, setClients] = useState([]);
   const [bills, setBills] = useState([]);
   const [expandedClient, setExpandedClient] = useState(null);
@@ -670,6 +687,21 @@ const BillingClients = ({ fs }) => {
     const unsubB = onSnapshot(collection(db, 'bills'), s => setBills(s.docs.map(d => ({id: d.id, ...d.data()}))));
     return () => { unsubC(); unsubB(); };
   }, []);
+
+  const handleDeleteClient = async (clientId, clientName) => {
+    if (!window.confirm(`Permanently delete client "${clientName}" and ALL their bills? This cannot be undone.`)) return;
+    try {
+      const clientBills = bills.filter(b => b.clientId === clientId);
+      for (const bill of clientBills) {
+        await deleteDoc(doc(db, 'bills', bill.id));
+      }
+      await deleteDoc(doc(db, 'billingClients', clientId));
+      alert('Client and all their bills deleted.');
+    } catch(e) {
+      console.error(e);
+      alert('Failed to delete client.');
+    }
+  };
 
   return (
     <div className="billing-page">
@@ -707,6 +739,12 @@ const BillingClients = ({ fs }) => {
                     <p><strong>Email:</strong> {c.email || 'N/A'}</p>
                     <p><strong>Created:</strong> {c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString() : 'N/A'}</p>
                   </div>
+                  <button 
+                    onClick={() => handleDeleteClient(c.id, c.name)}
+                    style={{background: '#fef2f2', color: '#ef4444', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '6px', cursor: 'pointer', display: 'flex', gap: '0.3rem', alignItems: 'center', fontSize: '0.8rem', fontWeight: 500, marginTop: '0.5rem'}}
+                  >
+                    <Trash2 size={14} /> Delete Client & All Bills
+                  </button>
                   <h5 style={{margin: '1rem 0 0.5rem 0'}}>Billing History</h5>
                   {clientBills.length === 0 ? <p className="empty-text">No bills generated.</p> : (
                     <table className="bp-cart-table">

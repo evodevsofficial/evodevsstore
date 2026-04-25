@@ -20,11 +20,21 @@ service cloud.firestore {
       allow read, create: if true;
       allow update, delete: if false;
     }
+
+    // Contacts - allow public write for contact form submissions
+    match /contacts/{contactId} {
+      allow read, write: if true;
+    }
+
+    // Custom Solution Requests
+    match /customRequests/{requestId} {
+      allow read, write: if true;
+    }
     
-    // Users - simplify write logic so signups don't crash popup
+    // Users - allow admin operations
     match /users/{userId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if true;  // Allow admin operations
     }
     
     // Orders - let users create and update their pending checks
@@ -36,7 +46,7 @@ service cloud.firestore {
     // Notifications - allow creation on checkout
     match /notifications/{notificationId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if true;  // Allow admin operations
     }
     
     // Billing Module
